@@ -2,6 +2,7 @@ const fs = require("fs");
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
+const { json } = require("express");
 
 const app = express();
 const PORT = process.env.PORT || 3030;
@@ -29,7 +30,7 @@ app.get("/api/notes/:id", (req, res) => {
         let notes = JSON.parse(data);
         res.json(notes[req.params.id]);      
     });
-})
+});
 
 app.post("/api/notes", (req, res) => {
     let { title, text } = req.body;
@@ -40,11 +41,26 @@ app.post("/api/notes", (req, res) => {
         let note = JSON.parse(data);
         note.push(newNote);
         note = JSON.stringify(newNote);
-        fs.writeFile("./db/db.json", note);
+        fs.writeFile("./db/db.json", note, err => {
+            if (err) throw err;
+        });
         return res.json(newNote);
     });
+});
 
-})
+app.delete("/api/notes/:id", (req, res) => {
+    fs.readFile("./db/db.json", "utf8", (err, data) => {
+        if (err) throw err;
+        let allNotes = JSON.parse(data);
+        let noteDel = allNotes.filter(dNote => dNote.id === req.params.id);
+        allNotes.splice(noteDel, 1);
+
+        fs.writeFile("./db/db.json", JSON.stringify(allNotes), err => {
+            if (err) throw err;
+        });
+        return res.json({});
+    });
+});
 
 app.listen(PORT, () => {
     console.log(`App listening on PORT ${PORT}`)
